@@ -1,14 +1,370 @@
 /**
-* Name: Alemans_farm
-* Author: Ligte002
-* Description: 
-* Tags: Tag1, Tag2, TagN
+* 
+*version august 2017
+arend ligtenberg
+* 
 */
-model Alegams_farm
+
+
+
+model Alegams_base
+
 
 import "./Alegams_globals.gaml"
-import "./Alegams_plot.gaml"
-//import "./Alegams_base.gaml"
+
+//import "./Alegams_statistics.gaml"
+
+global{
+	
+	float avg_HH_Account;
+	float std_HH_Account;
+	float std_up_HH_Account;
+	float std_down_HH_Account;
+	float min_HH_Account;
+	float max_HH_Account;
+	float tot_INT;
+	float tot_IE;
+	float tot_IMS;
+	float tot_INT_IE;
+	float tot_INT_IMS;
+	float tot_IE_IMS;
+		
+	geometry shape <- envelope(plot_file);
+
+	action calculate_averag_HH_account{
+		list<float> HH_account_List <- [];
+		std_HH_Account <- 0.0;
+		ask farm{
+			add HH_Account to:  HH_account_List; 
+		}	
+		
+		avg_HH_Account <- mean(HH_account_List);
+		std_HH_Account <- mean_deviation(HH_account_List);
+		min_HH_Account <- min(HH_account_List);
+		max_HH_Account <- max(HH_account_List);
+		std_up_HH_Account <- avg_HH_Account + std_HH_Account;
+		std_down_HH_Account <- avg_HH_Account - std_HH_Account;  
+	}
+
+	action calculate_tot_areas{
+		set tot_INT <- 0.0;
+		set tot_IE <- 0.0;
+		set tot_IMS <- 0.0;
+		ask plot{
+			set tot_INT <- tot_INT + area_INT;
+			set tot_IE <- tot_IE + area_IE;
+			set tot_IMS <- tot_IMS + area_IMS;		
+		}		
+	}
+
+
+
+	init{
+	
+	// create plot though GIS file
+	
+		create plot from: plot_file with: 	
+		[
+		plot_Id::int(read("OBJECTID")),
+		tot_Area::(float(read("Shape_Area")))/10000,
+		LU_model::int(read("LU_model")),
+		LU_local::int(read("LU_local")),
+		LU_office::string(read("LU_Office")),
+		LU_cad::string(read("LU_Cad1"))
+			
+		]{		}
+
+	//create a farm on each plot with a shrimp farm
+		ask plot{
+			
+			if self.production_System != 999{
+					//write "Creating farmer";
+					create farm number:1 {
+						set farmPlot <- myself;
+						set name <- "Schrimpfarmer_"+farmPlot.plot_Id;
+						set farmPlot.name <- "plot of: "+name;
+						location <- any_location_in(farmPlot);
+					}		
+				}
+		}
+
+
+	}//end init
+	
+	reflex output_Statistics{
+		do calculate_averag_HH_account;
+		do calculate_tot_areas;
+		
+	}
+	
+} //end global section
+
+
+species plot
+{
+	int plot_Id;
+	//int forest;
+	//int agrArea;
+	float area_INT;
+	float area_IE;
+	float area_IMS;
+	float tot_Area;
+	string LU_office;
+	string LU_cad;
+	int LU_local;
+	int LU_model;	
+	int production_System update: self color_plots [];
+	rgb color <- # gray;
+	int shrimp_Type;
+	float yield_INT_mono;
+	float yield_INT_vana;
+	float yield_IE;
+	float yield_IMS;
+	int Neighbour;
+
+	init
+	{
+		do determine_area_production_system;
+		do color_plots;
+	}
+		action determine_area_production_system{
+		switch LU_model{
+			match 1{
+				if tot_Area < 1 {
+					area_INT <- rnd(0.15,0.8);
+				}
+				if tot_Area >= 1 and tot_Area < 2 {
+					area_INT <- rnd(0.5,1.8);
+				}
+				if tot_Area >= 2 and tot_Area < 3 {
+					area_INT <- rnd(0.8,2.8);
+				}
+				if tot_Area >= 3 {
+					area_INT <- rnd(0.8,3.78);
+				
+				if area_INT > tot_Area {
+					area_INT <- tot_Area*0.8;
+				}
+				
+				}
+				set shrimp_Type <- rnd(1, 2);
+				set production_System <- INT;
+				
+			
+			
+			}
+			match 2{
+				if tot_Area < 1 {
+					area_IE <- rnd(0.2,0.7);
+				}
+				if tot_Area >= 1 and tot_Area < 2 {
+					area_IE <- rnd(0.5,1.5);
+				}
+				if tot_Area >= 2 and tot_Area < 3 {
+					area_IE <- rnd(0.95,2.6);
+				}
+				if tot_Area >= 3 {
+					area_IE <- rnd(0.8,5.3);
+				}
+				if area_IE > tot_Area {
+					area_IE <- tot_Area*0.7;
+				}
+				
+				
+				set production_System <- IE;
+				
+			}
+			match 3{
+				if tot_Area < 1 {
+					area_IMS <- rnd(0.7,0.8);
+				}
+				if tot_Area >= 1 and tot_Area < 2 {
+					area_IMS <- rnd(0.7,1.8);
+				}
+				if tot_Area >= 2 and tot_Area < 3 {
+					area_IMS <- rnd(1.5,2.5);
+				}
+				if tot_Area >= 3 {
+					area_IMS <- rnd(2.7,3.78);
+					}
+					if area_IE > tot_Area*0.8 {
+				set area_IMS <- tot_Area*0.7;}
+							
+				
+				set production_System <- IMS;
+				
+			}
+			match 4 {
+				if tot_Area < 1{
+					 area_INT <- rnd(0.1,0.4);
+					 area_IE <- tot_Area - area_INT;
+				}
+				if tot_Area >= 1 and tot_Area < 2 {
+					area_INT <- rnd(0.2,1.1 );
+					area_IE <- tot_Area * 0.7 - area_INT;
+				}
+				if tot_Area >= 2 {
+					area_INT <- rnd(min_INT_size,max_INT_size );
+					area_IE <- rnd(min_IE_size,max_IE_size) ;
+				}			
+				if (area_INT + area_IE) > tot_Area{
+					let d_area <- ((area_INT + area_IE) - tot_Area)/2;
+					set area_INT <-  area_INT - d_area;
+					set area_IE <- area_IE - d_area;
+									
+				}
+				set shrimp_Type <- rnd(1, 2);
+				set production_System <- INT_IE;
+			}
+			match 5 {
+				if tot_Area <= 1 {
+					area_INT <- rnd(0.1-0.7);
+					area_IMS <- tot_Area * 0.7 - area_INT;
+				
+					}
+				else {
+					set area_INT <- rnd(0.1,1.0);
+					set area_IMS <- tot_Area - area_INT;
+					if (area_INT + area_IMS) > tot_Area * 0.7 {
+					let d_area_INT_IMS <- ((area_INT + area_IMS)-tot_Area)/2;
+					set area_INT <-  area_INT - d_area_INT_IMS;
+					set area_IMS <- area_IMS- d_area_INT_IMS;
+					}
+				}
+				
+				
+				set shrimp_Type <- rnd(1, 2);
+				set production_System <- INT_IMS;
+			}
+			match 6 {
+				area_IE <- rnd(min_IE_size,max_IE_size);
+				area_IMS <- tot_Area*0.7-area_IE;	
+				production_System <- IE_IMS;
+				write "area_IE" + (plot at 687).area_IE + "area_IMS " + (plot at 687).area_IMS + "tot_Area "+ (plot at 687).tot_Area;
+			}
+			default{
+				set production_System <- unKnown;
+			}
+
+			
+						
+		}
+			set production_System <- LU_model;	
+			
+			}	
+
+	//this action determines the name of the production system                
+	action determine_prod_system
+	{
+		int INT_true <- 0;
+		int IE_true <- 0;
+		int IMS_true <- 0;
+		int type_string <- 0;
+		if area_INT > 0
+		{
+			set INT_true <- 1;
+		}
+
+		if area_IE > 0
+		{
+			set IE_true <- 10;
+		}
+
+		if area_IMS > 0
+		{
+			set IMS_true <- 100;
+		}
+
+		type_string <- INT_true + IE_true + IMS_true;
+		switch type_string
+		{
+			match 1
+			{
+				set production_System <- INT;
+			}
+
+			match 10
+			{
+				set production_System <- IE;
+			}
+
+			match 100
+			{
+				set production_System <- IMS;
+			}
+
+			match 11
+			{
+				set production_System <- INT_IE;
+			}
+
+			match 101
+			{
+				set production_System <- INT_IMS;
+			}
+
+			match 110
+			{
+				set production_System <- IE_IMS;
+			}
+
+			default
+			{
+				set production_System <- unKnown;
+			}
+		}
+	} //end determine_prod_system
+
+
+	//Calculates the cost of growing crop based on areas of different production systems on one plot
+
+
+	//color the plot
+	action color_plots
+	{
+		switch production_System
+		{
+			match INT
+			{
+				color <- # red;
+			}
+
+			match IE
+			{
+				color <- # yellow;
+			}
+
+			match IMS
+			{
+				color <- # green;
+			}
+
+			match INT_IE
+			{
+				color <- # sienna;
+			}
+
+			match INT_IMS
+			{
+				color <- # darkseagreen;
+			}
+
+			match IE_IMS
+			{
+				color <- # mediumaquamarine;
+			}
+			default
+			{
+				color <- # black;
+			}
+		}
+	} //end color_plots
+	aspect base
+	{
+		draw shape color: color border: true;
+	}
+}//end species plot
+
 species farm
 {
 //declaration of the farm characteristics
@@ -696,4 +1052,45 @@ species farm
 	}
 
 } //farm
+
+		
+
+
+
+
+	
+//experiment section 
+		
+experiment alegams type: gui {
+	parameter "Plot file" var: plot_file category: "GIS" ;
+
+	output{
+		display map_display {
+			species plot aspect: base;
+			species farm aspect: default;
+		}
+	
+		display HH_Account {
+			chart "Average saldo " type: series background: rgb ('white') size: {1,0.5} position: {0,0}{
+		 	data "AVG Saldo" value: avg_HH_Account color: rgb ('red');
+		 	data "Total Area INT" value: tot_INT color: rgb (128, 0, 255,255);
+		 	data "Total Area IE" value: tot_IE color: rgb (255, 128, 128,255);
+		 	data "Total Area IMS" value: tot_IMS color: #green;
+		 	
+		 	//data "std +" value: std_up_HH_Account color: rgb ('green');
+		 	//data "std -" value: std_down_HH_Account color: rgb ('green');		 	
+			}
+		}
+		monitor "Average saldo" value: avg_HH_Account refresh:every(1);
+		monitor "STD dev saldo" value: std_HH_Account refresh:every(1);			
+		monitor "Max saldo" value: max_HH_Account refresh:every(1);
+		monitor "Min dev saldo" value: min_HH_Account refresh:every(1);		
+		monitor "Total Area INT" value: tot_INT refresh:every(1);
+		monitor "Total Area IE" value: tot_IE refresh:every(1);
+		monitor "Total Area IMS" value: tot_IMS refresh:every(1);
+		
+		
+	}
+}	
+
 

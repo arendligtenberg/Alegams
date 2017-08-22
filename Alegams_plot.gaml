@@ -7,7 +7,6 @@
 model Alegams_plot
 
 import "./Alegams_globals.gaml"
-import "./Alegams_base.gaml"
 species plot
 {
 	int plot_Id;
@@ -21,7 +20,7 @@ species plot
 	string LU_cad;
 	int LU_local;
 	int LU_model;	
-	int production_System update: self color_plots [];
+	int production_System update: self determine_prod_system [];
 	rgb color <- # gray;
 	int shrimp_Type;
 	float yield_INT_mono;
@@ -34,6 +33,11 @@ species plot
 	{
 		do determine_area_production_system;
 		do color_plots;
+	}
+	
+	reflex update_colors{
+		do color_plots;
+		
 	}
 		action determine_area_production_system{
 		switch LU_model{
@@ -97,9 +101,7 @@ species plot
 					}
 					if area_IE > tot_Area*0.8 {
 				set area_IMS <- tot_Area*0.7;}
-				
-				
-				
+							
 				
 				set production_System <- IMS;
 				
@@ -153,7 +155,7 @@ species plot
 				write "area_IE" + (plot at 687).area_IE + "area_IMS " + (plot at 687).area_IMS + "tot_Area "+ (plot at 687).tot_Area;
 			}
 			default{
-				set production_System <- 999;
+				set production_System <- unKnown;
 			}
 
 			
@@ -163,7 +165,7 @@ species plot
 			
 			}	
 
-	//this action determines the name of the production system 
+	//this action determines the name of the production system                
 	action determine_prod_system
 	{
 		int INT_true <- 0;
@@ -222,10 +224,7 @@ species plot
 			{
 				set production_System <- unKnown;
 			}
-
 		}
-
-
 	} //end determine_prod_system
 
 
@@ -266,15 +265,21 @@ species plot
 			{
 				color <- # mediumaquamarine;
 			}
-
+			match unKnown
+			{
+				color <- # purple;
+			}
+			
+			default 
+			{
+				color <- # black;
+			}
 		}
-
 	} //end color_plots
 	aspect base
 	{
 		draw shape color: color border: true;
 	}
-	
-	}		
+}		
 
 

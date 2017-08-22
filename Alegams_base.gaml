@@ -1,11 +1,8 @@
 /**
 * 
-* Author: Arend, Hiêp
-* Description: first version of update ABM for the Alegams project
-* To be presented during the Vietnam workshop second half oktober 2016
-* August 2016
-* TBD 
-* adding decision making behaviour according flow diagram
+*version august 2017
+arend ligtenberg
+* 
 */
 
 
@@ -14,8 +11,8 @@ model Alegams_base
 
 
 import "./Alegams_globals.gaml"
-import "./Alegams_farm.gaml"
 import "./Alegams_plot.gaml"
+import "./Alegams_farm.gaml"
 import "./Alegams_statistics.gaml"
 
 global{

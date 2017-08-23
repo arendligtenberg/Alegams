@@ -75,10 +75,10 @@ model Alegams_globals
  	float Prob_shift_IE_IMS <- 0.01;
 	
 	//crop yields  (kg/ha/cycle) 
-	int crop_yield_INT_mono <- 5814 parameter: "crop yields intensive Monodon (kg/ha/cycle)" category: "Crop" ;
-	int crop_yield_INT_vana <- 8897	parameter: "crop yields intensive Vannamei (kg/ha/cycle)" category: "Crop" ;	
-	int crop_yield_IE <- 568 parameter: "crop yields improved extensive (kg/ha/cycle)" category: "Crop" ;	
-	int crop_yield_IMS <- 308 parameter: "crop yields integrated mangrove (kg/ha/cycle)" category: "Crop" ;	
+	int crop_yield_INT_mono <- 5814 parameter: "crop yields intensive Monodon (kg/ha/cycle)" category: "Crop" ; //5814
+	int crop_yield_INT_vana <- 8897	parameter: "crop yields intensive Vannamei (kg/ha/cycle)" category: "Crop" ; //8897	
+	int crop_yield_IE <- 568 parameter: "crop yields improved extensive (kg/ha/cycle)" category: "Crop" ;	//568
+	int crop_yield_IMS <- 308 parameter: "crop yields integrated mangrove (kg/ha/cycle)" category: "Crop" ; //308	
 
 	//crop yields in case of failure (kg/ha/cycle) 
 	int crop_yield_fail_INT_mono <- 1431 parameter: "crop yields if disease intensive Monodon (kg/ha/cycle)" category: "Crop" ;
@@ -209,6 +209,7 @@ model Alegams_globals
 	//investment cost
 	float invest_cost_INT_mono <- 234.03;
 	float invest_cost_INT_vana <- 291.41;
+	float invest_cost_INT <- 260; //average of mono and vana as these are not distinqjui
 	float invest_cost_IE <- 85.0;
 	float invest_cost_IMS <- 79.05;
 	

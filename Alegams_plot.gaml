@@ -35,6 +35,7 @@ species plot
 		do color_plots;
 	}
 	
+	//added reflex to update colors reflecting change in system (arend 23082017)
 	reflex update_colors{
 		do color_plots;
 		

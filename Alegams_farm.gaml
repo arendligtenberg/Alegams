@@ -38,25 +38,30 @@ species farm
 	int cycle_INT;
 	int cycle_IE;
 	int cycle_IMS;
-	bool disease_INT;
-	bool disease_IE;
-	bool disease_IMS;
-	bool reduce_INT;
-	bool reduce_IE;
-	bool INT_shift;
-	bool shift_INT_IMS;
-	bool shift_INT_IE;
-	bool shift_IE_IMS;
-	bool shift_IE_INT;
-	bool shift_IMS_INT;
-	bool shift_IMS_IE;
-	bool abandon_INT;
+	bool disease_INT <- false;
+	bool disease_IE <- false;
+	bool disease_IMS <- false;
+	bool reduce_INT <- false;
+	bool reduce_IE <- false;
+	bool INT_shift <- false;
+	bool shift_INT_IMS <- false;
+	bool shift_INT_IE <- false;
+	bool shift_IE_IMS <- false;
+	bool shift_IE_INT <- false;
+	bool shift_IMS_INT <- false;
+	bool shift_IMS_IE <- false;
+	bool abandon_INT <- false;
 	float crop_cost;
 	float income_from_INT_mono;
 	float income_from_INT_vana;
 	float income_from_IE;
 	float income_from_IMS;
 	float second_income;
+	float investment_cost; //added (arend 23082017)
+	float seed_cost; //added (arend 23082017)
+	bool seed_new_IMS <- false; //added (arend 23082017)
+	bool seed_new_IE <- false; //added (arend 23082017)
+	bool seed_new_INT <- false; //added (arend 23082017)
 	init
 	{
 		hh_Size <- rnd(1, 5);
@@ -82,12 +87,8 @@ species farm
 	reflex grow_Shrimp
 	{
 	//reset disease indicators
-		disease_INT <- false;
-		disease_IE <- false;
-		disease_IMS <- false;
-		// reset reduce
-		reduce_INT <- false;
-		reduce_IE <- false;
+	//mover resetting disease and reduce indicators to their actions (arend 23082017)
+		
 		//reset yield and income
 		farmPlot.yield_INT_mono <- 0.0;
 		farmPlot.yield_INT_vana <- 0.0;
@@ -104,6 +105,7 @@ species farm
 		//IE_fail_time <- IE_fail_time;
 		//INT_sucess_time <-INT_sucess_time;
 		//IE_sucess_time <-IE_sucess_time;
+		
 		if time = 12
 		{
 			time <- 0;
@@ -118,17 +120,24 @@ species farm
 
 		//reset crop costs
 		crop_cost <- 0.0;
+		//reset investment costs (arend 23082017)
+		investment_cost <- 0.0;
+		//reset seed costs
+		seed_cost <- 0.0;
+		
+		
 		do calc_crop_costs;
 		do calc_second_income;
 		//start farming actions
 		do check_for_disease;
 		do check_for_harvest;
-		do update_loan_and_bank;
+		do  seed_new_schrimp;
 		do cal_reduce_crop;
 		do reduce_crop;
 		do calc_ability_to_shift;
 		do shifting;
 		do abandon;
+		do update_loan_and_bank; //should be the last action (arend 23082017)
 
 		//update timers for every cycle
 		time <- time + 1;
@@ -156,9 +165,11 @@ species farm
 	// cop cost is calculated based on Standard distribution.
 	action calc_crop_costs
 	{
+		
 		float int_cost <- 0.0;
 		float ie_cost <- 0.0;
 		float ims_cost <- 0.0;
+		float maintain_cost <-0.0;
 		if farmPlot.shrimp_Type = 1
 		{
 			if grow_Time_INT <= 1
@@ -166,10 +177,10 @@ species farm
 				int_cost <- gauss({ Cost_1st_month_INT_mono, cropcost1st_stddev_INT_mono }) * farmPlot.area_INT; //crop cost in the first month for intensive farm with monodon;
 			} else
 			{
+			
 				int_cost <- gauss({ Nomal_cost_INT_mono, Nomal_cost_stddev_INT_mono }) * farmPlot.area_INT;
 			} //crop cost in the month following 1st month for intensive farm with monodon;
 		}
-
 		if farmPlot.shrimp_Type = 2
 		{
 			if grow_Time_INT <= 1
@@ -188,6 +199,7 @@ species farm
 		{
 			ie_cost <- gauss({ Nomal_cost_IE, Nomal_cost_stddev_IE }) * farmPlot.area_IE;
 		} //crop cost in the month following 1st month fo improve extensive farm;
+		
 		if grow_Time_IMS <= 1
 		{
 			ims_cost <- gauss({ Cost_1st_month_IMS, cropcost1st_stddev_IMS }) * farmPlot.area_IMS; //crop cost in the first month for integrated mangrove shrimp farm;
@@ -197,7 +209,29 @@ species farm
 		} //crop cost in the month following 1st month for integrated mangrove shrimp farm;
 		// calculate total crop cost. If in this month new shrimps are seeded than the montly cost are added to the 
 		// seed costs (which is the case when harvest has occured) 
-		crop_cost <- crop_cost + int_cost + ie_cost + ims_cost; //crop cost is calculate by summing all cost between  amount  of intensive cost, improve extensive and integrated mangrove shrimp
+		
+		//Add maintance cost for clean ponds etc. at the end of each cycle (arend 23082017)
+		if cycle_INT =  max_cycle_INT_mono and farmPlot.shrimp_Type = 1
+		{ 
+			 maintain_cost <- maintain_cost + (mantain_cost_INT * farmPlot.area_INT) ; 
+		}
+		if cycle_INT =  max_cycle_INT_vana and farmPlot.shrimp_Type = 2
+		{	 
+			 maintain_cost <- maintain_cost + (mantain_cost_INT * farmPlot.area_INT); 
+		}
+		if cycle_IE = max_cycle_IE
+		{	 
+			 maintain_cost <- maintain_cost + (mantain_cost_IE * farmPlot.area_IE); 
+		}			
+		if cycle_IMS = max_cycle_IMS
+		{	 
+			 maintain_cost <- maintain_cost + (mantain_cost_IMS * farmPlot.area_IMS); 
+		}			
+		 
+		 
+		crop_cost <- crop_cost + int_cost + ie_cost + ims_cost + maintain_cost; //crop cost is calculate by summing all cost between  amount  of intensive cost, improve extensive and integrated mangrove shrimp	
+			
+		
 
 	} //end of action calc_crop_costs
 	//========
@@ -236,8 +270,7 @@ species farm
 	//this action to check if disease occur in the farm. There are 3 type of shrimp farming in a farm. If disease occur model check for harvest in disease case
 	action check_for_disease
 	{
-	//TODO: need to check probabilities in globals. Currently extreme high!	
-	//TODO currently probabilities are non-conditional: is this ok?
+
 		if flip(farmPlotFailureRate_INT)
 		{
 			disease_INT <- true;
@@ -267,6 +300,7 @@ species farm
 	action check_for_harvest
 	{
 	//checking harvest in intensive pond;
+	//improve code (arend 23082017)
 		if farmPlot.area_INT > 0
 		{ //incase of disease
 			if disease_INT
@@ -293,13 +327,12 @@ species farm
 					}
 
 					income_from_INT_mono <- farmPlot.yield_INT_mono * shrimp_price_INT_mono; //income from intensive is based on shrimp price and yield;
+					
 					if grow_Time_INT >= time_Harvest_breakeven_INT_mono
 					{
 						cycle_INT <- cycle_INT + 1;
 					}
 
-					grow_Time_INT <- 0;
-					INT_fail_time <- INT_fail_time + 1;
 					//shrimp type is VANAMEI
 				} else
 				{
@@ -325,14 +358,23 @@ species farm
 					}
 
 					income_from_INT_vana <- farmPlot.yield_INT_vana * shrimp_price_INT_vana; //income from intensive is based on shrimp price and yield;
+					
 					if grow_Time_INT >= time_Harvest_breakeven_INT_vana
 					{
 						cycle_INT <- cycle_INT + 1;
 					} // if grow time higher than 1 the system production cropping time  is added 1 into intensive cycle;
-					grow_Time_INT <- 0;
-					INT_fail_time <- INT_fail_time + 1;
+					
+					
 				} //end of check for VANAMEI in disease case
 				//check for reduce after disease occur in the farm
+				
+				//reset disease moved to here (arend 23082017)
+					
+				//arend 23082017
+				grow_Time_INT <- 0;
+				INT_fail_time <- INT_fail_time + 1;
+				seed_new_INT <- true;
+				disease_INT <- false;
 			} else
 			{ //check for harvest incase of no disease
 			///in case of monodon
@@ -348,6 +390,8 @@ species farm
 						cycle_INT <- cycle_INT + 1;
 						grow_Time_INT <- 0;
 						INT_sucess_time <- INT_sucess_time + 1;
+						//arend 23082017
+						seed_new_INT <- true;
 					}
 
 				} else
@@ -363,6 +407,8 @@ species farm
 						cycle_INT <- cycle_INT + 1;
 						grow_Time_INT <- 0;
 						INT_sucess_time <- INT_sucess_time + 1;
+						//arend 23082017
+						seed_new_INT <- true;
 					} //end of checking harvest in case of no disease
 				}
 
@@ -378,8 +424,6 @@ species farm
 				{
 					farmPlot.yield_IE <- crop_yield_fail_IE * farmPlot.area_IE;
 					income_from_IE <- farmPlot.yield_IE * shrimp_price_IE;
-					grow_Time_IE <- 0;
-					IE_fail_time <- IE_fail_time + 1;
 				}
 				//incase of the farm was farming until breakeven time
 				if grow_Time_IE = time_Harvest_breakeven_IE and cycle_IE <= max_cycle_IE
@@ -390,7 +434,6 @@ species farm
 					{
 						cycle_IE <- cycle_IE + 1;
 					}
-
 					grow_Time_IE <- 0;
 					IE_fail_time <- IE_fail_time + 1;
 				}
@@ -403,10 +446,14 @@ species farm
 					{
 						cycle_IE <- cycle_IE + 1;
 					}
-
-					grow_Time_IE <- 0;
-					IE_fail_time <- IE_fail_time + 1;
 				}
+				
+				// arend 23082017
+				grow_Time_IE <- 0;
+				IE_fail_time <- IE_fail_time + 1;
+				disease_IE <- false;
+				seed_new_IE <- true;
+				
 			} //end of checking in case of disease in improve extensive pond
 		else
 			{ //in case of no disease
@@ -419,7 +466,9 @@ species farm
 					farmPlot.yield_IE <- crop_yield_IE * farmPlot.area_IE;
 					income_from_IE <- farmPlot.yield_IE * shrimp_price_IE;
 					cycle_IE <- cycle_IE + 1;
-					IE_sucess_time <- IE_sucess_time + 1;
+					IE_sucess_time <- IE_sucess_time + 1;		
+					//arend (2308017
+					seed_new_IE <- true;
 				}
 			} //end of checking in case of no disease in improve extensive pond
 		} //end of checking harvest in improve extensive pond
@@ -439,6 +488,10 @@ species farm
 					income_from_IMS <- farmPlot.yield_IMS * shrimp_price_IMS;
 					grow_Time_IMS <- 0;
 				}
+				
+				//moved to here (arend 23082017)
+				disease_IMS <- false;
+			
 			} //end of checking in case of disease
 		else
 			{ //in case of no disease
@@ -462,6 +515,28 @@ species farm
 	} //end of action check_for_harvest
 	//
 	
+	
+	//to calculate new start-up cost after disease or succesful harvest
+	//assemed IMS never need to be started-up (arend 23082017)
+	action seed_new_schrimp
+	{
+		if seed_new_INT
+		{
+			seed_cost <- seed_cost + shrimp_init_INT * farmPlot.area_INT;
+			set seed_new_INT <- false;
+		}
+
+		if seed_new_IE
+		{
+			seed_cost <- seed_cost + shrimp_init_IE * farmPlot.area_IE;
+			set seed_new_IE <- false;
+		}		
+		
+		
+	}
+	
+	
+	
 	//update bankaccount and loans based on cropcosts, yield and second income for each month
 	//suggestion is to skip calucalating loans explicitely but consider a negative bankaccount as a loan.
 	//this saves us a lot of hassle
@@ -469,7 +544,14 @@ species farm
 	action update_loan_and_bank
 	{
 		let hhcost <- hh_Size * HH_expenses_avg;
-		set HH_Account <- (HH_Account - hhcost - crop_cost + second_Income + income_from_INT_mono + income_from_INT_vana + income_from_IE + income_from_IMS);
+		let income <- second_Income + income_from_INT_mono + income_from_INT_vana + income_from_IE + income_from_IMS;
+		let costs <- hhcost + crop_cost + seed_cost + investment_cost ;
+		let balance <- income - costs;
+		write "costs: "+ costs;
+		write "income: "+ income;
+		write "balance:"+ balance;
+		write "=====================";
+		set HH_Account <- HH_Account + balance;
 	}
 		
 	//reduce in intensive pond
@@ -485,9 +567,6 @@ species farm
 			{ 
 				reduce_INT <- true;
 			}
-		}else
-		{
-			reduce_INT <- false;
 		}
 		
 		//reduce IE
@@ -497,9 +576,6 @@ species farm
 			{
 				reduce_IE <- true;
 			}
-		} else
-		{
-			reduce_IE <- false;
 		}
 	} //end of action calculation to reduce crop in case disease
 	
@@ -514,6 +590,7 @@ species farm
 			{
 				farmPlot.area_INT <- min_INT_size;
 			}
+			reduce_INT <- false;
 		} //end of reduceINT
 
 		//reduce_IE
@@ -526,6 +603,7 @@ species farm
 			{
 				farmPlot.area_IE <- min_IE_size;
 			}
+			reduce_IE <- false;
 		}
 
 	} // end of action reduce crop
@@ -618,13 +696,14 @@ species farm
 
 	} //end of action calculation ability to shift
 
-	//
+	//added investment costs (arend 23082017)
 	action shifting
 	{
 		if shift_INT_IE = true
 		{
 			farmPlot.area_IE <- farmPlot.area_IE + farmPlot.area_INT;
 			farmPlot.area_INT <- 0.0;
+			set investment_cost <- investment_cost + (invest_cost_IE * farmPlot.area_INT);
 			shift_INT_IE <- false;
 		}
 
@@ -632,6 +711,7 @@ species farm
 		{
 			farmPlot.area_IMS <- farmPlot.area_IMS + farmPlot.area_INT;
 			farmPlot.area_INT <- 0.0;
+			set investment_cost <- investment_cost + (invest_cost_IMS * farmPlot.area_INT);
 			shift_INT_IMS <- false;
 		}
 
@@ -639,6 +719,7 @@ species farm
 		{
 			farmPlot.area_IMS <- farmPlot.area_IMS + farmPlot.area_IE;
 			farmPlot.area_IE <- 0.0;
+			set investment_cost <- investment_cost + (invest_cost_IMS * farmPlot.area_IE);
 			shift_IE_IMS <- false;
 		}
 
@@ -648,6 +729,7 @@ species farm
 			{
 				farmPlot.area_INT <- farmPlot.area_INT + shift_INT_size;
 				farmPlot.area_IE <- farmPlot.area_IE - shift_INT_size;
+				set investment_cost <- investment_cost + (invest_cost_INT * shift_INT_size);
 				shift_IE_INT <- false;
 			} else
 			{
@@ -662,6 +744,7 @@ species farm
 			{
 				farmPlot.area_INT <- farmPlot.area_INT + shift_INT_size;
 				farmPlot.area_IMS <- farmPlot.area_IMS - shift_INT_size;
+				set investment_cost <- investment_cost + (invest_cost_INT * shift_INT_size);
 				shift_IMS_INT <- false;
 			}
 
@@ -673,6 +756,7 @@ species farm
 			{
 				farmPlot.area_IE <- farmPlot.area_IE + shift_IE_size;
 				farmPlot.area_IMS <- farmPlot.area_IMS - shift_INT_size;
+				set investment_cost <- investment_cost + (invest_cost_IE * shift_IE_size);
 				shift_IMS_IE <- false;
 			}
 

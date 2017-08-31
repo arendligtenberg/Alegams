@@ -64,8 +64,6 @@ global{
 
 //Species section
 
-
-	
 //experiment section 
 		
 experiment alegams type: gui {

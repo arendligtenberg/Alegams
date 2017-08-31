@@ -106,8 +106,8 @@ model Alegams_globals
 	//float HH_expense_INT_vana <- 3.1;
 	//float HH_expense_IE <- 1.6;
 	//float HH_expense_IMS <- 2.1;
-	float HH_expenses_avg <- 2.5 parameter: "average household expenses (mVnd/pp/month)" category: "Farm" ;
-	float HH_expenses_extra <- 2.5 parameter: "average household expenses (mVnd/pp/month)" category: "Farm";
+	float HH_expenses_avg <- 2.5 parameter: "average household expenses (mVnd/pp/month)" category: "Farm" ; //2.5
+	float HH_expenses_extra <- 2.5 parameter: "average household expenses (mVnd/pp/month)" category: "Farm"; //2.5
 	// average loan (Mvnd/ha/year (stdev are estimated)
 	//float HH_loan_avg_IE <- 116.00;
 	//float HH_loan_std_IE <- 35.00;
@@ -165,7 +165,6 @@ model Alegams_globals
  	float mantain_cost_IMS <- 6.5 parameter: "mantain crop cost integrated mangrove shrimp (mVnd/ha/cycle)" category: "Crop" ;
 	
 	//shrimpfeed per month (milion/month)
-	
 	float feedcost_INT_mono <- 70.3;
 	float feedcost_INT_vana <- 116.4;
 	float feedcost_IE <- 5.7;

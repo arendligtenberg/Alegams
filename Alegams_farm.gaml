@@ -59,12 +59,20 @@ species farm
 	float second_income;
 	float investment_cost; //added (arend 23082017)
 	float seed_cost; //added (arend 23082017)
+	
+	//moved to upper level so these variable can be accessed by alle action/functions (arend 31082017) 
+	float int_cost <- 0.0;
+	float ie_cost <- 0.0;
+	float ims_cost <- 0.0;
+	float maintain_cost <-0.0;
+	
+	float hh_cost; //added (arend 31082017
 	bool seed_new_IMS <- false; //added (arend 23082017)
 	bool seed_new_IE <- false; //added (arend 23082017)
 	bool seed_new_INT <- false; //added (arend 23082017)
 	init
 	{
-		hh_Size <- rnd(1, 5);
+		hh_Size <- rnd(2, 5);
 		age <- rnd(22, 70);
 		time <- 1;
 		grow_Time_INT <- rnd(0, time_Harvest_INT_mono);
@@ -87,7 +95,7 @@ species farm
 	reflex grow_Shrimp
 	{
 	//reset disease indicators
-	//mover resetting disease and reduce indicators to their actions (arend 23082017)
+	//moved resetting disease and reduce indicators to inside their actions (arend 23082017)
 		
 		//reset yield and income
 		farmPlot.yield_INT_mono <- 0.0;
@@ -125,6 +133,12 @@ species farm
 		//reset seed costs
 		seed_cost <- 0.0;
 		
+		//reset incomes (arend 31082017
+		second_Income <- 0.0;
+		income_from_INT_mono <- 0.0;
+		income_from_INT_vana <- 0.0;
+		income_from_IE  <- 0.0;
+		income_from_IMS <- 0.0;
 		
 		do calc_crop_costs;
 		do calc_second_income;
@@ -166,10 +180,6 @@ species farm
 	action calc_crop_costs
 	{
 		
-		float int_cost <- 0.0;
-		float ie_cost <- 0.0;
-		float ims_cost <- 0.0;
-		float maintain_cost <-0.0;
 		if farmPlot.shrimp_Type = 1
 		{
 			if grow_Time_INT <= 1
@@ -230,7 +240,7 @@ species farm
 		 
 		 
 		crop_cost <- crop_cost + int_cost + ie_cost + ims_cost + maintain_cost; //crop cost is calculate by summing all cost between  amount  of intensive cost, improve extensive and integrated mangrove shrimp	
-			
+		//write "cost:"+crop_cost;
 		
 
 	} //end of action calc_crop_costs
@@ -300,7 +310,7 @@ species farm
 	action check_for_harvest
 	{
 	//checking harvest in intensive pond;
-	//improve code (arend 23082017)
+	//improved code (arend 23082017)
 		if farmPlot.area_INT > 0
 		{ //incase of disease
 			if disease_INT
@@ -337,21 +347,18 @@ species farm
 				} else
 				{
 					if grow_Time_INT = time_Harvest_fail_INT_vana and cycle_INT <= max_cycle_INT_vana //in case the farm can be harvest at that moment and farming crop time is less than or equal to maximum number of cycle intensive
-
 					{
 						farmPlot.yield_INT_vana <- crop_yield_fail_INT_vana * farmPlot.area_INT; //yield incase of disease
 
 					}
 
 					if grow_Time_INT = time_Harvest_breakeven_INT_vana and cycle_INT <= max_cycle_INT_vana //in case the farm can be harvest at that moment and farming crop time is less than or equal to maximum number of cycle intensive
-
 					{ //incase of the farm was farming until breakeven time
 						farmPlot.yield_INT_vana <- crop_yield_breakeven_INT_vana * farmPlot.area_INT; //yield incase of disease
 
 					}
 
 					if grow_Time_INT >= time_Harvest_INT_vana and cycle_INT <= max_cycle_INT_vana //in case the farm can be harvest at that moment and farming crop time is less than or equal to maximum number of cycle intensive
-
 					{ //incase of the farm was farming until harvest time
 						farmPlot.yield_INT_vana <- crop_yield_INT_vana * farmPlot.area_INT; //yield incase of disease
 
@@ -374,8 +381,11 @@ species farm
 				grow_Time_INT <- 0;
 				INT_fail_time <- INT_fail_time + 1;
 				seed_new_INT <- true;
-				disease_INT <- false;
-			} else
+				
+				//not neccesarry  since it is check every time in the action check_for_disease (arend 29082017)
+				//disease_INT <- false;
+			} 
+			else
 			{ //check for harvest incase of no disease
 			///in case of monodon
 				if farmPlot.shrimp_Type = 1
@@ -394,7 +404,8 @@ species farm
 						seed_new_INT <- true;
 					}
 
-				} else
+				} 
+				else
 				{
 				//in case of vanamei
 					if grow_Time_INT < time_Harvest_INT_vana
@@ -451,7 +462,10 @@ species farm
 				// arend 23082017
 				grow_Time_IE <- 0;
 				IE_fail_time <- IE_fail_time + 1;
-				disease_IE <- false;
+				
+				//not neccesarry  since it is check every time in the action check_for_disease (arend 29082017)
+				//disease_IE <- false; 
+				
 				seed_new_IE <- true;
 				
 			} //end of checking in case of disease in improve extensive pond
@@ -543,14 +557,14 @@ species farm
 	//recalculate balance based on costs and income
 	action update_loan_and_bank
 	{
-		let hhcost <- hh_Size * HH_expenses_avg;
+		set hh_cost <- hh_Size * HH_expenses_avg;
 		let income <- second_Income + income_from_INT_mono + income_from_INT_vana + income_from_IE + income_from_IMS;
-		let costs <- hhcost + crop_cost + seed_cost + investment_cost ;
+		let costs <- hh_cost + crop_cost + seed_cost + investment_cost ;
 		let balance <- income - costs;
-		write "costs: "+ costs;
-		write "income: "+ income;
-		write "balance:"+ balance;
-		write "=====================";
+		//write "costs: "+ costs;
+		//write "income: "+ income;
+		//write "balance:"+ balance;
+		//write "=====================";
 		set HH_Account <- HH_Account + balance;
 	}
 		
@@ -701,32 +715,36 @@ species farm
 	{
 		if shift_INT_IE = true
 		{
+			write "shift to int";
 			farmPlot.area_IE <- farmPlot.area_IE + farmPlot.area_INT;
-			farmPlot.area_INT <- 0.0;
 			set investment_cost <- investment_cost + (invest_cost_IE * farmPlot.area_INT);
 			shift_INT_IE <- false;
+			farmPlot.area_INT <- 0.0;
 		}
 
 		if shift_INT_IMS = true
 		{
+			write "shift to int";
 			farmPlot.area_IMS <- farmPlot.area_IMS + farmPlot.area_INT;
-			farmPlot.area_INT <- 0.0;
 			set investment_cost <- investment_cost + (invest_cost_IMS * farmPlot.area_INT);
 			shift_INT_IMS <- false;
+			farmPlot.area_INT <- 0.0;
 		}
 
 		if shift_IE_IMS = true
 		{
+			write "shift to int";
 			farmPlot.area_IMS <- farmPlot.area_IMS + farmPlot.area_IE;
-			farmPlot.area_IE <- 0.0;
 			set investment_cost <- investment_cost + (invest_cost_IMS * farmPlot.area_IE);
 			shift_IE_IMS <- false;
+			farmPlot.area_IE <- 0.0;
 		}
 
 		if shift_IE_INT = true
 		{
 			if (farmPlot.area_IE - shift_INT_size) > 0
 			{
+				write "shift to int";
 				farmPlot.area_INT <- farmPlot.area_INT + shift_INT_size;
 				farmPlot.area_IE <- farmPlot.area_IE - shift_INT_size;
 				set investment_cost <- investment_cost + (invest_cost_INT * shift_INT_size);

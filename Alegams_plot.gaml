@@ -37,6 +37,7 @@ species plot
 	
 	//added reflex to update colors reflecting change in system (arend 23082017)
 	reflex update_colors{
+		do determine_prod_system;
 		do color_plots;
 		
 	}
@@ -153,7 +154,7 @@ species plot
 				area_IE <- rnd(min_IE_size,max_IE_size);
 				area_IMS <- tot_Area*0.7-area_IE;	
 				production_System <- IE_IMS;
-				write "area_IE" + (plot at 687).area_IE + "area_IMS " + (plot at 687).area_IMS + "tot_Area "+ (plot at 687).tot_Area;
+				//write "area_IE" + (plot at 687).area_IE + "area_IMS " + (plot at 687).area_IMS + "tot_Area "+ (plot at 687).tot_Area;
 			}
 			default{
 				set production_System <- unKnown;
